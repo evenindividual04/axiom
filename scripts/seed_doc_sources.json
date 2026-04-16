@@ -1,0 +1,22 @@
+[
+  {
+    "name": "loan_agreement_seed.txt",
+    "url": "https://www.consumerfinance.gov/consumer-tools/loan-estimator/"
+  },
+  {
+    "name": "insurance_policy_seed.txt",
+    "url": "https://content.naic.org/cipr-topics/health-insurance"
+  },
+  {
+    "name": "credit_card_terms_seed.txt",
+    "url": "https://www.consumerfinance.gov/consumer-tools/credit-cards/"
+  },
+  {
+    "name": "fraud_compliance_seed.txt",
+    "url": "https://www.fdic.gov/resources/consumers/consumer-news/2023-06.html"
+  },
+  {
+    "name": "emi_calculation_seed.txt",
+    "url": "https://www.investopedia.com/mortgage/emi-calculator/"
+  }
+]

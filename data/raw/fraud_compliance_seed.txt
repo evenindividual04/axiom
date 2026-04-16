@@ -1,0 +1,6 @@
+Fraud and Compliance Guidance Extract
+
+Prohibited Activities: Forged income statements, identity manipulation, staged accidents, and evasion tactics.
+Regulatory Duty: Financial entities must apply non-discriminatory underwriting and claims practices.
+Unsafe Requests: Systems must refuse guidance that assists fraud, evasion, or unlawful activity.
+Adverse Action: Suspected fraud may trigger claim denial, account blocking, and legal escalation.

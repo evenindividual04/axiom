@@ -1,0 +1,7 @@
+Loan Agreement Extract
+
+Interest Rate: Annual reducing balance interest applies as per lender schedule.
+EMI Delinquency: A fixed late fee of INR 750 may apply along with 2% overdue monthly interest.
+Default Trigger: Three consecutive missed EMI payments may initiate default review and acceleration clauses.
+Prepayment: Prepayment charges may apply depending on product type and rate regime.
+Documentation: Borrower must provide valid KYC and income proof; forged records are prohibited.

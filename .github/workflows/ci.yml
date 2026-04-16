@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+
+      - name: Lint with ruff
+        run: |
+          ruff check src models tests
+
+      - name: Run tests with overall coverage gate
+        run: |
+          pytest tests/ --cov=models --cov=src --cov-report=term-missing --cov-fail-under=47
+
+      - name: Run tests with critical-path coverage gate
+        run: |
+          pytest tests/ \
+            --cov=models.llm_runner \
+            --cov=src.llm_reliability_engine.orchestrator \
+            --cov-report=term-missing \
+            --cov-fail-under=42
+
+      - name: Smoke check CLI status
+        run: |
+          python main.py status

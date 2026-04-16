@@ -1,0 +1,7 @@
+Insurance Policy Extract
+
+Claim Window: Claims should be notified within 15 days of incident, unless otherwise approved.
+Required Documents: Policy number, incident report, bills/invoices, and supporting evidence.
+Pre-existing Conditions: Covered after waiting period as defined by policy schedule.
+Exclusions: Cosmetic procedures are excluded unless medically necessary and approved.
+Fraud: Staged events, fabricated losses, and manipulated evidence are grounds for rejection and legal action.

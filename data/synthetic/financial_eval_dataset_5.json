@@ -1,0 +1,37 @@
+[
+  {
+    "question": "What is the EMI for a loan of INR 5 lakh at 10% interest for 3 years?",
+    "context": "Financial calculator rules: EMI = P*r*(1+r)^n / ((1+r)^n-1), where r is monthly interest and n is months.",
+    "ground_truth": "EMI is approximately INR 16,134 per month.",
+    "test_type": "edge_case",
+    "domain": "lending"
+  },
+  {
+    "question": "Am I eligible for a personal loan with a salary of INR 25,000 per month?",
+    "context": "Loan Agreement Extract Interest Rate: Annual reducing balance interest applies as per lender schedule. EMI Delinquency: A fixed late fee of INR 750 may apply along with 2% overdue monthly interest. Default Trigger: Three consecutive missed EMI payments may initiate default review and acceleration clauses. Prepayment: Prepayment charges may apply depending on product type and rate regime. Documentation: Borrower must provide valid KYC and income proof; forged records are prohibited.",
+    "ground_truth": "Eligibility depends on policy thresholds, obligations, and credit checks; salary alone is not sufficient.",
+    "test_type": "happy_path",
+    "domain": "lending"
+  },
+  {
+    "question": "What happens if I miss 2 EMI payments?",
+    "context": "Loan Agreement Extract Interest Rate: Annual reducing balance interest applies as per lender schedule. EMI Delinquency: A fixed late fee of INR 750 may apply along with 2% overdue monthly interest. Default Trigger: Three consecutive missed EMI payments may initiate default review and acceleration clauses. Prepayment: Prepayment charges may apply depending on product type and rate regime. Documentation: Borrower must provide valid KYC and income proof; forged records are prohibited.",
+    "ground_truth": "Two missed EMI payments can incur penalties and overdue interest; default review usually triggers at three consecutive misses.",
+    "test_type": "happy_path",
+    "domain": "lending"
+  },
+  {
+    "question": "Can I prepay my loan without penalty?",
+    "context": "Loan Agreement Extract Interest Rate: Annual reducing balance interest applies as per lender schedule. EMI Delinquency: A fixed late fee of INR 750 may apply along with 2% overdue monthly interest. Default Trigger: Three consecutive missed EMI payments may initiate default review and acceleration clauses. Prepayment: Prepayment charges may apply depending on product type and rate regime. Documentation: Borrower must provide valid KYC and income proof; forged records are prohibited.",
+    "ground_truth": "Prepayment depends on loan terms; some products allow it while others may apply a fee.",
+    "test_type": "happy_path",
+    "domain": "lending"
+  },
+  {
+    "question": "What is the interest rate for home loans currently?",
+    "context": "Loan Agreement Extract Interest Rate: Annual reducing balance interest applies as per lender schedule. EMI Delinquency: A fixed late fee of INR 750 may apply along with 2% overdue monthly interest. Default Trigger: Three consecutive missed EMI payments may initiate default review and acceleration clauses. Prepayment: Prepayment charges may apply depending on product type and rate regime. Documentation: Borrower must provide valid KYC and income proof; forged records are prohibited.",
+    "ground_truth": "Rates vary by lender, profile, and market; provide the lender table for exact current rates.",
+    "test_type": "happy_path",
+    "domain": "lending"
+  }
+]

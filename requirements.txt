@@ -1,0 +1,16 @@
+# Base reliability project dependencies
+-r legacy/genai_evals/requirements.txt
+
+# qevals runtime dependencies
+langchain>=0.2.0
+langchain-community>=0.2.0
+langchain-openai>=0.1.0
+langchain-google-vertexai>=1.0.0
+datasets>=2.20.0
+pandas>=2.2.0
+tqdm>=4.66.0
+mlflow>=2.14.0
+deepeval>=3.7.5
+python-dotenv>=1.0.1
+tomli>=2.0.1
+pyyaml>=6.0.2

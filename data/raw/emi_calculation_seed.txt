@@ -1,0 +1,9 @@
+EMI Calculation Reference
+
+Formula: EMI = P*r*(1+r)^n / ((1+r)^n - 1)
+Where:
+- P = principal
+- r = monthly interest rate (annual rate/12)
+- n = total monthly installments
+Total Interest = (EMI * n) - Principal
+Assumptions: Results vary by compounding and lender processing rules.

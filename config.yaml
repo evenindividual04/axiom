@@ -1,0 +1,65 @@
+dataset:
+  target_rows: 100
+  min_rows: 200
+  max_rows: 500
+  test_type_mix:
+    happy_path: 0.55
+    edge_case: 0.30
+    adversarial: 0.15
+
+models:
+  - name: gpt-4o-mini
+    provider: openai
+    enabled: false
+  - name: llama-3.3-70b-versatile
+    provider: groq
+    enabled: false
+  - name: gemini-2.0-flash
+    provider: gemini
+    enabled: false
+  - name: openrouter/auto
+    provider: openrouter
+    enabled: true
+  - name: glm-4.5
+    provider: zai
+    enabled: false
+  - name: claude-3-5-haiku-latest
+    provider: anthropic
+    enabled: false
+  - name: llama3.1:8b
+    provider: ollama
+    enabled: false
+
+runtime:
+  mock_mode: false
+  mock_fallback_on_failure: true
+  concurrency: 1
+  request_timeout_seconds: 60
+  rate_limit_per_minute: 6
+  max_retries: 2
+  retry_base_delay_seconds: 2.0
+  retry_max_delay_seconds: 20.0
+  circuit_breaker_failure_threshold: 2
+  circuit_breaker_cooldown_seconds: 120
+  provider_overrides:
+    groq:
+      rate_limit_per_minute: 6
+      max_retries: 2
+      circuit_breaker_failure_threshold: 2
+      circuit_breaker_cooldown_seconds: 180
+    openrouter:
+      rate_limit_per_minute: 3
+      max_retries: 2
+      circuit_breaker_failure_threshold: 2
+      circuit_breaker_cooldown_seconds: 240
+    anthropic:
+      rate_limit_per_minute: 3
+      max_retries: 2
+      circuit_breaker_failure_threshold: 2
+      circuit_breaker_cooldown_seconds: 240
+
+evaluation:
+  weights:
+    answer_relevancy: 0.35
+    faithfulness: 0.45
+    hallucination_inverse: 0.20

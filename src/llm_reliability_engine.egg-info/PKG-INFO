@@ -1,0 +1,109 @@
+Metadata-Version: 2.4
+Name: llm-reliability-engine
+Version: 0.1.0
+Summary: Unified LLM reliability project combining genai_evals and qevals
+Author: Anmol Sen
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: pyyaml>=6.0.2
+Requires-Dist: pandas>=2.2.0
+Requires-Dist: streamlit>=1.44.0
+Requires-Dist: mlflow>=2.14.0
+Requires-Dist: requests>=2.32.0
+Requires-Dist: openai>=2.9.0
+Requires-Dist: anthropic>=0.75.0
+Requires-Dist: ollama>=0.6.1
+Requires-Dist: google-genai>=1.54.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.3.0; extra == "dev"
+Requires-Dist: ruff>=0.11.0; extra == "dev"
+
+# LLM Reliability Engine
+
+A production-style reliability engine for financial AI systems using dynamic synthetic data, multi-model evaluation, failure classification, and prompt optimization.
+
+## Stack
+- Python 3.11 + `uv` environment management
+- Async model execution (`asyncio`)
+- Metrics and failure analysis modules
+- SQLite run store + MLflow logging
+- Streamlit dashboard
+
+## Runtime structure
+
+```text
+llm-reliability-engine/
+  data/
+    raw/
+    synthetic/
+  evals/
+  models/
+  prompts/
+  experiments/
+  dashboard/
+  src/llm_reliability_engine/
+  main.py
+  config.yaml
+```
+
+## 1) Setup with UV
+
+```bash
+cd llm-reliability-engine
+bash scripts/bootstrap.sh
+uv run python main.py status
+```
+
+## 2) Run full pipeline (live)
+
+```bash
+uv run python main.py run-pipeline --live
+```
+
+This generates:
+- synthetic dataset in `data/synthetic/`
+- row-level results in `experiments/row_results.csv`
+- summary artifact in `experiments/results.json`
+- persistent run store in `experiments/runs.db`
+
+## 3) Open dashboard
+
+```bash
+uv run python main.py dashboard
+```
+
+## 4) Download or refresh seed docs
+
+If you want to refresh the grounded financial docs under `data/raw/`, run:
+
+```bash
+uv run python scripts/download_seed_docs.py
+```
+
+The source URLs are listed in `scripts/seed_doc_sources.json`.
+
+## Provider env vars
+Set as needed before live runs:
+- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
+- `GROQ_API_KEY`
+- `GEMINI_API_KEY`
+- `OPENROUTER_API_KEY`
+- `ZAI_API_KEY`
+
+Optional base URLs:
+- `OPENAI_BASE_URL`
+- `GROQ_BASE_URL`
+- `OPENROUTER_BASE_URL`
+- `GEMINI_OPENAI_BASE_URL`
+- `ZAI_BASE_URL` (required for `provider: zai`)
+
+For Ollama, ensure local server is available.
+
+## Mock fallback behavior
+Final runs should use live mode: `uv run python main.py run-pipeline --live`.
+
+If all live calls fail for a prompt version and `runtime.mock_fallback_on_failure=true`, the pipeline will fall back to mock execution for continuity and still emit artifacts. This keeps local development unblocked while preserving explicit live-first behavior.
+
+## Legacy notes
+`legacy/` remains in this repo as a reference source. Runtime flow uses modular files in `data/`, `models/`, and `evals/`.
