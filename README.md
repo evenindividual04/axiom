@@ -7,7 +7,7 @@ A production-style reliability engine for financial AI systems using dynamic syn
 - Async model execution (`asyncio`)
 - Metrics and failure analysis modules
 - SQLite run store + MLflow logging
-- Streamlit dashboard
+- Streamlit dashboard with provider health and artifact navigation
 
 ## Runtime structure
 
@@ -20,6 +20,8 @@ llm-reliability-engine/
   models/
   prompts/
   experiments/
+    manifests/
+    reports/
   dashboard/
   src/llm_reliability_engine/
   main.py
@@ -45,12 +47,22 @@ This generates:
 - row-level results in `experiments/row_results.csv`
 - summary artifact in `experiments/results.json`
 - persistent run store in `experiments/runs.db`
+- run manifest in `experiments/manifests/`
+- markdown report in `experiments/reports/`
+
+The summary artifact now also points at the manifest and report paths so each run is reproducible end to end.
 
 ## 3) Open dashboard
 
 ```bash
 uv run python main.py dashboard
 ```
+
+The dashboard now highlights:
+- run KPIs and prompt deltas
+- provider health and cooldown state
+- failure breakdowns
+- links into the latest manifest and report artifacts
 
 ## 4) Download or refresh seed docs
 
@@ -90,4 +102,4 @@ Final runs should use live mode: `uv run python main.py run-pipeline --live`.
 If all live calls fail for a prompt version and `runtime.mock_fallback_on_failure=true`, the pipeline will fall back to mock execution for continuity and still emit artifacts. This keeps local development unblocked while preserving explicit live-first behavior.
 
 ## Legacy notes
-`legacy/` remains in this repo as a reference source. Runtime flow uses modular files in `data/`, `models/`, and `evals/`.
+`legacy/` remains in this repo as a read-only reference archive. The runtime flow uses the modular files in `data/`, `models/`, `evals/`, `dashboard/`, and `src/llm_reliability_engine/`.

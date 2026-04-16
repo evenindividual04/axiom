@@ -7,7 +7,7 @@ import sqlite3
 import time
 import uuid
 from collections import Counter, defaultdict
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any, Callable
@@ -175,6 +175,117 @@ def _baseline_improved(summary: dict[str, dict[str, dict[str, Any]]]) -> dict[st
     return result
 
 
+@dataclass(frozen=True)
+class ProviderHealthState:
+    status: str = "healthy"
+    reason: str = ""
+    disabled_until: float | None = None
+    last_error: str = ""
+    transient_error_count: int = 0
+
+
+class ProviderHealthPolicy:
+    def __init__(self, provider_settings: dict[str, ProviderRuntimeSettings] | None = None):
+        self._provider_settings = dict(provider_settings or {})
+        self._states: dict[str, ProviderHealthState] = {}
+
+    def _cooldown_seconds(self, provider: str) -> float:
+        settings = self._provider_settings.get(provider)
+        if settings is not None:
+            return max(1.0, settings.circuit_breaker_cooldown_seconds)
+        return 300.0
+
+    def _state_for(self, provider: str) -> ProviderHealthState:
+        return self._states.get(provider, ProviderHealthState())
+
+    def _store_state(self, provider: str, state: ProviderHealthState) -> None:
+        self._states[provider] = state
+
+    def _refresh_expired(self, provider: str, now: float) -> ProviderHealthState:
+        state = self._state_for(provider)
+        if state.status == "cooling_down" and state.disabled_until is not None and now >= state.disabled_until:
+            refreshed = ProviderHealthState(status="healthy")
+            self._store_state(provider, refreshed)
+            return refreshed
+        return state
+
+    def record_errors(self, errors: list[ModelError], now: float | None = None) -> None:
+        current_time = time.monotonic() if now is None else now
+        by_provider: dict[str, list[ModelError]] = defaultdict(list)
+        for err in errors:
+            provider = err.provider.strip().lower()
+            if provider:
+                by_provider[provider].append(err)
+
+        for provider, provider_errors in by_provider.items():
+            state = self._refresh_expired(provider, current_time)
+            last_error = provider_errors[-1].error if provider_errors else state.last_error
+
+            if any(_is_hard_quota_error(err.error) for err in provider_errors):
+                self._store_state(
+                    provider,
+                    ProviderHealthState(
+                        status="disabled",
+                        reason="hard_quota",
+                        disabled_until=None,
+                        last_error=last_error,
+                        transient_error_count=0,
+                    ),
+                )
+                continue
+
+            transient_count = sum(1 for err in provider_errors if _is_rate_limit_error(err.error))
+            if transient_count >= 3:
+                next_disabled_until = current_time + self._cooldown_seconds(provider)
+                if state.status == "cooling_down" and state.disabled_until is not None:
+                    next_disabled_until = max(next_disabled_until, state.disabled_until)
+                self._store_state(
+                    provider,
+                    ProviderHealthState(
+                        status="cooling_down",
+                        reason="rate_limit",
+                        disabled_until=next_disabled_until,
+                        last_error=last_error,
+                        transient_error_count=max(state.transient_error_count, transient_count),
+                    ),
+                )
+
+    def apply(self, model_specs: list[dict[str, Any]], now: float | None = None) -> list[dict[str, Any]]:
+        current_time = time.monotonic() if now is None else now
+        updated_specs: list[dict[str, Any]] = []
+
+        for spec in model_specs:
+            provider = str(spec.get("provider", "")).strip().lower()
+            base_enabled = bool(spec.get("enabled", True))
+            updated_spec = dict(spec)
+            state = self._refresh_expired(provider, current_time) if provider else ProviderHealthState()
+
+            if not base_enabled:
+                updated_spec["enabled"] = False
+            elif state.status in {"disabled", "cooling_down"}:
+                updated_spec["enabled"] = False
+            else:
+                updated_spec["enabled"] = True
+
+            updated_specs.append(updated_spec)
+
+        return updated_specs
+
+    def snapshot(self, now: float | None = None) -> dict[str, dict[str, Any]]:
+        current_time = time.monotonic() if now is None else now
+        snapshot: dict[str, dict[str, Any]] = {}
+        for provider, state in self._states.items():
+            effective_state = self._refresh_expired(provider, current_time)
+            snapshot[provider] = {
+                "status": effective_state.status,
+                "reason": effective_state.reason,
+                "disabled_until": effective_state.disabled_until,
+                "last_error": effective_state.last_error,
+                "transient_error_count": effective_state.transient_error_count,
+            }
+        return snapshot
+
+
 def _try_log_mlflow(run_id: str, summary: dict[str, dict[str, dict[str, Any]]]) -> None:
     try:
         import mlflow
@@ -316,34 +427,9 @@ def _is_hard_quota_error(error_message: str) -> bool:
 
 
 def _disable_rate_limited_models(model_specs: list[dict[str, Any]], errors: list[ModelError]) -> list[dict[str, Any]]:
-    rate_limit_counts: Counter[str] = Counter()
-    providers_to_disable: set[str] = set()
-
-    for err in errors:
-        provider = err.provider.strip().lower()
-        if not provider:
-            continue
-        if _is_hard_quota_error(err.error):
-            providers_to_disable.add(provider)
-            continue
-        if _is_rate_limit_error(err.error):
-            rate_limit_counts[provider] += 1
-
-    for provider, count in rate_limit_counts.items():
-        if count >= 3:
-            providers_to_disable.add(provider)
-
-    if not providers_to_disable:
-        return model_specs
-
-    updated_specs: list[dict[str, Any]] = []
-    for spec in model_specs:
-        provider = str(spec.get("provider", "")).strip().lower()
-        updated_spec = dict(spec)
-        if provider in providers_to_disable:
-            updated_spec["enabled"] = False
-        updated_specs.append(updated_spec)
-    return updated_specs
+    policy = ProviderHealthPolicy()
+    policy.record_errors(errors)
+    return policy.apply(model_specs)
 
 
 def _error_reason_bucket(error_message: str) -> str:
@@ -446,6 +532,7 @@ def _build_run_manifest(
     initial_model_specs: list[dict[str, Any]],
     final_model_specs: list[dict[str, Any]],
     provider_settings: dict[str, ProviderRuntimeSettings],
+    provider_health_snapshot: dict[str, dict[str, Any]],
     run_started_wall_clock: datetime,
     run_started_perf: float,
     results: list[EvalResult],
@@ -490,6 +577,7 @@ def _build_run_manifest(
                 provider: asdict(settings)
                 for provider, settings in provider_settings.items()
             },
+            "health_snapshot": provider_health_snapshot,
             "enabled_at_start": enabled_providers_start,
             "enabled_at_end": enabled_providers_end,
             "disabled_during_run": disabled_providers,
@@ -545,6 +633,7 @@ def run_pipeline(config_path: Path | None = None, force_live: bool = False) -> d
     mock_fallback_on_failure = bool(config.get("runtime", {}).get("mock_fallback_on_failure", False))
     mock_mode = _resolve_mock_mode(config, force_live)
     provider_settings = _provider_runtime_settings(config, model_specs)
+    provider_health_policy = ProviderHealthPolicy(provider_settings)
 
     dataset_path, generated_rows = generate_dataset(total_rows=target_rows)
     dataset_rows = [asdict(row) for row in generated_rows]
@@ -557,6 +646,8 @@ def run_pipeline(config_path: Path | None = None, force_live: bool = False) -> d
         prompt_template = _read_prompt(version)
         fallback_used = False
         prompt_started_at = time.perf_counter()
+
+        model_specs = provider_health_policy.apply(model_specs, now=time.monotonic())
 
         enabled_models = [spec for spec in model_specs if spec.get("enabled", True)]
         total_tasks = len(enabled_models) * len(dataset_rows)
@@ -631,7 +722,8 @@ def run_pipeline(config_path: Path | None = None, force_live: bool = False) -> d
             prompt_errors=prompt_errors,
             fallback_used=fallback_used,
         )
-        model_specs = _disable_rate_limited_models(model_specs, prompt_errors)
+        provider_health_policy.record_errors(prompt_errors, now=time.monotonic())
+        model_specs = provider_health_policy.apply(model_specs, now=time.monotonic())
 
     summary = _group_summary(all_results)
     baseline_view = _baseline_improved(summary)
@@ -650,6 +742,7 @@ def run_pipeline(config_path: Path | None = None, force_live: bool = False) -> d
         initial_model_specs=initial_model_specs,
         final_model_specs=model_specs,
         provider_settings=provider_settings,
+        provider_health_snapshot=provider_health_policy.snapshot(now=time.monotonic()),
         run_started_wall_clock=run_started_wall_clock,
         run_started_perf=run_started_at,
         results=all_results,
@@ -667,6 +760,7 @@ def run_pipeline(config_path: Path | None = None, force_live: bool = False) -> d
         "failure_count": len(all_errors),
         "failures": [asdict(err) for err in all_errors],
         "manifest_path": _path_from_root(manifest_path),
+        "provider_health": provider_health_policy.snapshot(now=time.monotonic()),
     }
 
     report_markdown = build_run_report_markdown(result_payload, manifest)

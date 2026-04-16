@@ -80,6 +80,7 @@ def test_build_run_manifest_contains_expected_sections() -> None:
         initial_model_specs=initial_specs,
         final_model_specs=final_specs,
         provider_settings=provider_settings,
+        provider_health_snapshot={"groq": {"status": "cooling_down", "reason": "rate_limit"}},
         run_started_wall_clock=datetime.now(UTC),
         run_started_perf=0.0,
         results=[_sample_result()],
