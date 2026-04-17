@@ -4,6 +4,12 @@
 
 Axiom runs LLM agents through dynamic synthetic test suites grounded in your domain data, evaluates responses across 7+ model providers, classifies failures, and tracks provider health with automatic cooldown recovery. Each run produces a full manifest, markdown report, and live dashboard.
 
+<p align="center">
+  <img src="file.png" alt="Axiom reliability workflow and control-room visual" width="860" />
+</p>
+
+<p align="center"><em>From domain-grounded dataset generation through multi-model execution, provider health recovery, and artifact reporting, this is the end-to-end Axiom reliability loop.</em></p>
+
 Use Axiom for **finance, healthcare, legal, e-commerce, customer support, code generation**—or any domain where reliable LLM outputs matter.
 
 ## Why Axiom?
